@@ -5,7 +5,7 @@ import os
 class Settings(BaseSettings):
     database_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg2://aiganym:lDVMmlv6rYvsgTVgsD1Ej9HzBQhnVvWV@dpg-d4i4d7umcj7s73ccndv0-a.frankfurt-postgres.render.com/caregivers_db_3eiv?sslmode=require"
+        "postgresql+psycopg://aiganym:lDVMmlv6rYvsgTVgsD1Ej9HzBQhnVvWV@dpg-d4i4d7umcj7s73ccndv0-a.frankfurt-postgres.render.com/caregivers_db_3eiv?sslmode=require"
     )
     
     class Config:
