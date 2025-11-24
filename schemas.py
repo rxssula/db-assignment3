@@ -1,6 +1,31 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import date, time
+from models import GenderEnum, CaregivingTypeEnum
+import enum
+
+
+def _coerce_enum(value, enum_class):
+    """Allow API clients to send enum names (e.g., MALE) or values (e.g., Male)."""
+    if value is None or isinstance(value, enum_class):
+        return value
+    if isinstance(value, enum.Enum):
+        try:
+            return enum_class[value.name]
+        except KeyError:
+            pass
+    if isinstance(value, str):
+        candidate = value.strip()
+        if not candidate:
+            return None
+        try:
+            return enum_class[candidate.upper()]
+        except KeyError:
+            pass
+        for member in enum_class:
+            if member.value.lower() == candidate.lower():
+                return member
+    raise ValueError(f"Invalid value '{value}' for enum {enum_class.__name__}")
 
 
 class UserBase(BaseModel):
@@ -36,9 +61,19 @@ class UserResponse(UserBase):
 
 class CaregiverBase(BaseModel):
     photo: Optional[str] = None
-    gender: Optional[str] = None
-    caregiving_type: Optional[str] = None
+    gender: Optional[GenderEnum] = None
+    caregiving_type: Optional[CaregivingTypeEnum] = None
     hourly_rate: Optional[float] = None
+
+    @field_validator("gender", mode="before")
+    @classmethod
+    def _normalize_gender(cls, value):
+        return _coerce_enum(value, GenderEnum)
+
+    @field_validator("caregiving_type", mode="before")
+    @classmethod
+    def _normalize_caregiving_type(cls, value):
+        return _coerce_enum(value, CaregivingTypeEnum)
 
 
 class CaregiverCreate(CaregiverBase):
@@ -47,8 +82,8 @@ class CaregiverCreate(CaregiverBase):
 
 class CaregiverUpdate(BaseModel):
     photo: Optional[str] = None
-    gender: Optional[str] = None
-    caregiving_type: Optional[str] = None
+    gender: Optional[GenderEnum] = None
+    caregiving_type: Optional[CaregivingTypeEnum] = None
     hourly_rate: Optional[float] = None
 
 
@@ -104,9 +139,14 @@ class AddressResponse(AddressBase):
 
 
 class JobBase(BaseModel):
-    required_caregiving_type: Optional[str] = None
+    required_caregiving_type: Optional[CaregivingTypeEnum] = None
     other_requirements: Optional[str] = None
     date_posted: Optional[date] = None
+
+    @field_validator("required_caregiving_type", mode="before")
+    @classmethod
+    def _normalize_required_caregiving_type(cls, value):
+        return _coerce_enum(value, CaregivingTypeEnum)
 
 
 class JobCreate(JobBase):
@@ -115,7 +155,7 @@ class JobCreate(JobBase):
 
 class JobUpdate(BaseModel):
     member_user_id: Optional[int] = None
-    required_caregiving_type: Optional[str] = None
+    required_caregiving_type: Optional[CaregivingTypeEnum] = None
     other_requirements: Optional[str] = None
     date_posted: Optional[date] = None
 

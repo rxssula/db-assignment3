@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import User, Caregiver, Member, Address, Job, JobApplication, Appointment
+from models import User, Caregiver, Member, Address, Job, JobApplication, Appointment, GenderEnum, CaregivingTypeEnum
 from schemas import (
     UserCreate, UserUpdate,
     CaregiverCreate, CaregiverUpdate,
@@ -10,6 +10,39 @@ from schemas import (
     JobApplicationCreate, JobApplicationUpdate,
     AppointmentCreate, AppointmentUpdate
 )
+import enum
+
+
+def _convert_enum_value(value, enum_class):
+    """Convert enum name or value to enum value string"""
+    if value is None:
+        return None
+    if isinstance(value, enum.Enum):
+        return value.value
+    if isinstance(value, str):
+        # Try to find by enum name first (e.g., "MALE" -> GenderEnum.MALE -> "Male")
+        try:
+            enum_member = getattr(enum_class, value.upper(), None)
+            if enum_member and isinstance(enum_member, enum.Enum):
+                return enum_member.value
+        except (AttributeError, TypeError):
+            pass
+        # Try exact name match
+        try:
+            enum_member = getattr(enum_class, value, None)
+            if enum_member and isinstance(enum_member, enum.Enum):
+                return enum_member.value
+        except (AttributeError, TypeError):
+            pass
+        # Try to find by value (case-insensitive)
+        for e in enum_class:
+            if e.value.lower() == value.lower() or e.value == value:
+                return e.value
+        # Try case-insensitive name match as last resort
+        for e in enum_class:
+            if e.name.upper() == value.upper():
+                return e.value
+    return value
 
 
 def create_user(db: Session, user: UserCreate) -> User:
@@ -53,7 +86,14 @@ def delete_user(db: Session, user_id: int) -> bool:
 
 
 def create_caregiver(db: Session, caregiver: CaregiverCreate) -> Caregiver:
-    db_caregiver = Caregiver(**caregiver.model_dump())
+    # Use model_dump with mode='python' to get Python objects, then convert enums
+    data = caregiver.model_dump(mode='python')
+    # Convert enum names to values
+    if 'gender' in data and data['gender'] is not None:
+        data['gender'] = _convert_enum_value(data['gender'], GenderEnum)
+    if 'caregiving_type' in data and data['caregiving_type'] is not None:
+        data['caregiving_type'] = _convert_enum_value(data['caregiving_type'], CaregivingTypeEnum)
+    db_caregiver = Caregiver(**data)
     db.add(db_caregiver)
     db.commit()
     db.refresh(db_caregiver)
@@ -71,7 +111,12 @@ def get_caregivers(db: Session, skip: int = 0, limit: int = 100) -> List[Caregiv
 def update_caregiver(db: Session, caregiver_user_id: int, caregiver_update: CaregiverUpdate) -> Optional[Caregiver]:
     db_caregiver = get_caregiver(db, caregiver_user_id)
     if db_caregiver:
-        update_data = caregiver_update.model_dump(exclude_unset=True)
+        update_data = caregiver_update.model_dump(exclude_unset=True, mode='python')
+        # Convert enum names to values
+        if 'gender' in update_data and update_data['gender'] is not None:
+            update_data['gender'] = _convert_enum_value(update_data['gender'], GenderEnum)
+        if 'caregiving_type' in update_data and update_data['caregiving_type'] is not None:
+            update_data['caregiving_type'] = _convert_enum_value(update_data['caregiving_type'], CaregivingTypeEnum)
         for field, value in update_data.items():
             setattr(db_caregiver, field, value)
         db.commit()
@@ -161,7 +206,11 @@ def delete_address(db: Session, member_user_id: int) -> bool:
 
 
 def create_job(db: Session, job: JobCreate) -> Job:
-    db_job = Job(**job.model_dump())
+    data = job.model_dump(mode='python')
+    # Convert enum names to values
+    if 'required_caregiving_type' in data and data['required_caregiving_type'] is not None:
+        data['required_caregiving_type'] = _convert_enum_value(data['required_caregiving_type'], CaregivingTypeEnum)
+    db_job = Job(**data)
     db.add(db_job)
     db.commit()
     db.refresh(db_job)
@@ -183,7 +232,10 @@ def get_jobs_by_member(db: Session, member_user_id: int) -> List[Job]:
 def update_job(db: Session, job_id: int, job_update: JobUpdate) -> Optional[Job]:
     db_job = get_job(db, job_id)
     if db_job:
-        update_data = job_update.model_dump(exclude_unset=True)
+        update_data = job_update.model_dump(exclude_unset=True, mode='python')
+        # Convert enum names to values
+        if 'required_caregiving_type' in update_data and update_data['required_caregiving_type'] is not None:
+            update_data['required_caregiving_type'] = _convert_enum_value(update_data['required_caregiving_type'], CaregivingTypeEnum)
         for field, value in update_data.items():
             setattr(db_job, field, value)
         db.commit()
