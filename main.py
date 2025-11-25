@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List
 from database import get_db, engine
+from db_utils import ensure_appointment_status_constraint
 from schemas import (
     UserCreate, UserUpdate, UserResponse,
     CaregiverCreate, CaregiverUpdate, CaregiverResponse,
@@ -27,6 +28,7 @@ async def startup_event():
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
+            ensure_appointment_status_constraint(engine)
             print("Database connection established successfully!")
             break
         except Exception as e:

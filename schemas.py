@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from datetime import date, time
-from models import GenderEnum, CaregivingTypeEnum
+from models import GenderEnum, CaregivingTypeEnum, AppointmentStatusEnum
 import enum
 
 
@@ -193,7 +193,12 @@ class AppointmentBase(BaseModel):
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     work_hours: Optional[float] = None
-    status: Optional[str] = None
+    status: Optional[AppointmentStatusEnum] = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _normalize_status(cls, value):
+        return _coerce_enum(value, AppointmentStatusEnum)
 
 
 class AppointmentCreate(AppointmentBase):
@@ -207,7 +212,7 @@ class AppointmentUpdate(BaseModel):
     appointment_date: Optional[date] = None
     appointment_time: Optional[time] = None
     work_hours: Optional[float] = None
-    status: Optional[str] = None
+    status: Optional[AppointmentStatusEnum] = None
 
 
 class AppointmentResponse(AppointmentBase):

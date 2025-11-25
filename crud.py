@@ -1,6 +1,17 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from models import User, Caregiver, Member, Address, Job, JobApplication, Appointment, GenderEnum, CaregivingTypeEnum
+from models import (
+    User,
+    Caregiver,
+    Member,
+    Address,
+    Job,
+    JobApplication,
+    Appointment,
+    GenderEnum,
+    CaregivingTypeEnum,
+    AppointmentStatusEnum
+)
 from schemas import (
     UserCreate, UserUpdate,
     CaregiverCreate, CaregiverUpdate,
@@ -300,7 +311,10 @@ def delete_job_application(db: Session, caregiver_user_id: int, job_id: int) -> 
 
 
 def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointment:
-    db_appointment = Appointment(**appointment.model_dump())
+    data = appointment.model_dump(mode='python')
+    if 'status' in data and data['status'] is not None:
+        data['status'] = _convert_enum_value(data['status'], AppointmentStatusEnum)
+    db_appointment = Appointment(**data)
     db.add(db_appointment)
     db.commit()
     db.refresh(db_appointment)
@@ -326,7 +340,9 @@ def get_appointments_by_member(db: Session, member_user_id: int) -> List[Appoint
 def update_appointment(db: Session, appointment_id: int, appointment_update: AppointmentUpdate) -> Optional[Appointment]:
     db_appointment = get_appointment(db, appointment_id)
     if db_appointment:
-        update_data = appointment_update.model_dump(exclude_unset=True)
+        update_data = appointment_update.model_dump(exclude_unset=True, mode='python')
+        if 'status' in update_data and update_data['status'] is not None:
+            update_data['status'] = _convert_enum_value(update_data['status'], AppointmentStatusEnum)
         for field, value in update_data.items():
             setattr(db_appointment, field, value)
         db.commit()

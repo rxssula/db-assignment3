@@ -16,6 +16,13 @@ class CaregivingTypeEnum(str, enum.Enum):
     PLAYMATE = "Playmate"
 
 
+class AppointmentStatusEnum(str, enum.Enum):
+    CONFIRM = "confirm"
+    DECLINE = "decline"
+    PENDING = "pending"
+    CANCEL = "cancel"
+
+
 def _enum_values(enum_class):
     return [member.value for member in enum_class]
 
@@ -201,8 +208,12 @@ class Appointment(Base):
     appointment_date = Column(Date)
     appointment_time = Column(Time)
     work_hours = Column(Float)
-    status = Column(String)
+    status = Column(String, nullable=False)
     
     caregiver = relationship("Caregiver", back_populates="appointments")
     member = relationship("Member", back_populates="appointments")
+
+    @validates("status")
+    def _validate_status(self, key, value):
+        return _normalize_enum_value(value, AppointmentStatusEnum)
 
