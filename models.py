@@ -121,8 +121,18 @@ class User(Base):
     profile_description = Column(Text)
     password = Column(String, nullable=False)
     
-    caregiver = relationship("Caregiver", back_populates="user", uselist=False)
-    member = relationship("Member", back_populates="user", uselist=False)
+    caregiver = relationship(
+        "Caregiver",
+        back_populates="user",
+        uselist=False,
+        passive_deletes=True
+    )
+    member = relationship(
+        "Member",
+        back_populates="user",
+        uselist=False,
+        passive_deletes=True
+    )
 
 
 class Caregiver(Base):
@@ -163,9 +173,22 @@ class Member(Base):
     dependent_description = Column(Text)
     
     user = relationship("User", back_populates="member")
-    address = relationship("Address", back_populates="member", uselist=False)
-    jobs = relationship("Job", back_populates="member")
-    appointments = relationship("Appointment", back_populates="member")
+    address = relationship(
+        "Address",
+        back_populates="member",
+        uselist=False,
+        passive_deletes=True
+    )
+    jobs = relationship(
+        "Job",
+        back_populates="member",
+        passive_deletes=True
+    )
+    appointments = relationship(
+        "Appointment",
+        back_populates="member",
+        passive_deletes=True
+    )
 
 
 class Address(Base):
