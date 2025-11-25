@@ -135,8 +135,16 @@ class Caregiver(Base):
     hourly_rate = Column(Float)
     
     user = relationship("User", back_populates="caregiver")
-    job_applications = relationship("JobApplication", back_populates="caregiver")
-    appointments = relationship("Appointment", back_populates="caregiver")
+    job_applications = relationship(
+        "JobApplication",
+        back_populates="caregiver",
+        passive_deletes=True
+    )
+    appointments = relationship(
+        "Appointment",
+        back_populates="caregiver",
+        passive_deletes=True
+    )
 
     @validates("gender")
     def _validate_gender(self, key, value):
